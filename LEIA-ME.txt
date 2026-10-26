@@ -1,0 +1,13 @@
+COMO GERAR O .JAR PELO GITHUB
+
+1) Crie um repositorio novo no GitHub (pode ser privado).
+2) Suba TODO o conteudo desta pasta (build.gradle, .gitignore, src e a pasta .github).
+   - Pelo site: Add file > Upload files, arraste tudo. Se a pasta .github nao subir,
+     use Add file > Create new file, digite  .github/workflows/build.yml  e cole o conteudo.
+3) Abra a aba "Actions". O build roda sozinho a cada commit (ou clique em
+   "Gerar .jar" > Run workflow). Leva uns 5-10 minutos.
+4) Quando ficar verde, clique na execucao e baixe "GangueDaWelcia-jar" em Artifacts.
+   Dentro tem o GangueDaWelcia-5_3.jar. Coloque na pasta mods do Forge 1.8.9.
+
+Se ficar vermelho, copie o final do log do passo "Compilar" e me mande.
+Se voce ja tem seu proprio build/workflow, so substitua a pasta src.

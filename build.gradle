@@ -1,0 +1,70 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = "https://maven.minecraftforge.net/" }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = "5_3"
+group = "com.familiasantana"
+archivesBaseName = "GangueDaWelcia"
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava.options.encoding = 'UTF-8'
+
+minecraft {
+    version = "1.8.9-11.15.1.2318-1.8.9"
+    runDir = "run"
+    mappings = "stable_22"
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.minecraftforge.net/" }
+}
+
+configurations { mcpMap }
+dependencies {
+    mcpMap 'de.oceanlabs.mcp:mcp_stable:22-1.8.9@zip'
+}
+
+// O codigo-fonte usa nomes SRG (func_xxx / field_xxx). O ForgeGradle compila com
+// nomes MCP, entao esta tarefa converte os nomes antes de compilar.
+// O reobfJar do ForgeGradle depois devolve tudo para SRG dentro do .jar final.
+def srcDirOriginal = file("src/main/java")
+def srcDirMapped = file("$buildDir/mcpsrc")
+
+task remapSrg {
+    inputs.dir srcDirOriginal
+    outputs.dir srcDirMapped
+    doLast {
+        def names = [:]
+        def zip = new java.util.zip.ZipFile(configurations.mcpMap.singleFile)
+        ['methods.csv', 'fields.csv'].each { n ->
+            zip.getInputStream(zip.getEntry(n)).eachLine('UTF-8') { line ->
+                def p = line.split(',', 3)
+                if (p.length >= 2 && (p[0].startsWith('func_') || p[0].startsWith('field_'))) names[p[0]] = p[1]
+            }
+        }
+        zip.close()
+        delete srcDirMapped
+        srcDirMapped.mkdirs()
+        def pattern = ~/\b(?:func|field)_\d+_\w+/
+        srcDirOriginal.eachFileRecurse { f ->
+            if (!f.isFile()) return
+            def rel = srcDirOriginal.toURI().relativize(f.toURI()).getPath()
+            def out = new File(srcDirMapped, rel)
+            out.parentFile.mkdirs()
+            def text = f.getText('UTF-8').replaceAll(pattern) { m -> names.containsKey(m) ? names[m] : m }
+            out.setText(text, 'UTF-8')
+        }
+    }
+}
+
+sourceSets.main.java.srcDirs = [srcDirMapped]
+compileJava.dependsOn remapSrg
